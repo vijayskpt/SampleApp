@@ -1,0 +1,261 @@
+﻿@model IEnumerable<SampleApp.Inventory>
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Index</title>
+</head>
+<body>
+    <table border="0" cellpadding="0" cellspacing="0">
+        <tr>
+            <td style="width: 150px">
+                ItemName<br />
+                <input type="text" id="txtItemName" style="width:140px" />
+            </td>
+            <td style="width: 150px">
+                Description:<br />
+                <input type="text" id="txtDescription" style="width:140px" />
+            </td>
+            <td style="width: 150px">
+                Price:<br />
+                <input type="text" id="txtPrice" style="width:140px" />
+            </td>
+
+            <td style="width: 200px">
+                <br />
+                <input type="button" id="btnAdd" value="Add" />
+            </td>
+        </tr>
+    </table>
+    <br />
+    <table id="tblInventory" class="table" border="1" cellpadding="0" cellspacing="0">
+        <tr>
+            <th style="width:100px">ItemCode</th>
+            <th style="width:150px">ItemName</th>
+            <th style="width:150px">Description</th>
+            <th style="width:150px">Price</th>
+            <th style="width:150px"></th>
+        </tr>
+        @foreach (Inventory inv in Model)
+        {
+            <tr>
+                <td class="ItemCode">
+                    <span>@inv.ItemCode.ToString()</span>
+                </td>
+                <td class="ItemName">
+                    <span>@inv.ItemName.ToString()</span>
+                    <input type="text" value="@inv.ItemName" style="display:none" />
+                </td>
+                <td class="Description">
+                    <span>@inv.Description.ToString()</span>
+                    <input type="text" value="@inv.Description" style="display:none" />
+                </td>
+                <td class="Price">
+                    <span>@inv.Price.ToString()</span>
+                    <input type="text" value="@inv.Price" style="display:none" />
+                </td>
+
+                <td>
+                    <a class="Edit" href="javascript:;">Edit</a>
+                    <a class="Update" href="javascript:;" style="display:none">Update</a>
+                    <a class="Cancel" href="javascript:;" style="display:none">Cancel</a>
+                    <a class="Delete" href="javascript:;">Delete</a>
+                </td>
+            </tr>
+        }
+    </table>
+
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script type="text/javascript" src="http://ajax.cdnjs.com/ajax/libs/json2/20110223/json2.js"></script>
+    <script type="text/javascript">
+        //$(function () {
+        //    //Remove the dummy row if data present.
+        //    if ($("#tblInventory tr").length > 2) {
+        //        $("#tblInventory tr:eq(1)").remove();
+        //    } else {
+        //        var row = $("#tblInventory tr:last-child");
+        //        row.find(".Edit").hide();
+        //        row.find(".Delete").hide();
+        //        row.find("span").html('&nbsp;');
+        //    }
+        //});
+
+        function AppendRow(row, itemcode, itemname, description, price) {
+            //Bind ItemCode.
+            $(".ItemCode", row).find("span").html(itemcode);
+
+            //Bind ItemName.
+            $(".ItemName", row).find("span").html(itemname);
+            $(".ItemName", row).find("input").val(itemname);
+
+            //Bind Description.
+            $(".Description", row).find("span").html(description);
+            $(".Description", row).find("input").val(description);
+
+            //Bind Price.
+            $(".Price", row).find("span").html(price);
+            $(".Price", row).find("input").val(price);
+
+
+            row.find(".Edit").show();
+            row.find(".Delete").show();
+            $("#tblInventory").append(row);
+        };
+
+        //Add event handler.
+        $("body").on("click", "#btnAdd", function () {
+            debugger;
+            var txtItemName = $("#txtItemName");
+            var txtDescription = $("#txtDescription");
+            var txtPrice = $("#txtPrice");
+
+
+            if (txtItemName.val().trim() === '') {
+                alert('Please Enter the ItemName');
+                return;
+            }
+            if (txtDescription.val().trim() === '') {
+                alert('Please Enter the Description');
+                return;
+            }
+            if (txtPrice.val().trim() === '') {
+                alert('Please Enter the Price');
+                return;
+            }
+            $.ajax({
+                type: "POST",
+                url: "/Home/InsertInventory",
+                data: '{ItemName: "' + txtItemName.val() + '", Description: "' + txtDescription.val() + '",Price:"' + parseFloat(txtPrice.val()) + '"}',
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (r) {
+                    var row = $("#tblInventory tr:last-child");
+                    if ($("#tblInventory tr:last-child span").eq(0).html() != "&nbsp;") {
+                        row = row.clone();
+                    }
+                    AppendRow(row, r.ItemCode, r.ItemName, r.Description, r.Price);
+                    txtItemName.val("");
+                    txtDescription.val("");
+                    txtPrice.val("");
+                    debugger;
+                    alert(r.ErrorDesc);
+                    location.reload();
+                }
+            });
+
+        });
+
+        //Edit event handler.
+        $("body").on("click", "#tblInventory .Edit", function () {
+            var row = $(this).closest("tr");
+            $("td", row).each(function () {
+                if ($(this).find("input").length > 0) {
+                    $(this).find("input").show();
+                    $(this).find("span").hide();
+                }
+            });
+            row.find(".Update").show();
+            row.find(".Cancel").show();
+            row.find(".Delete").hide();
+            $(this).hide();
+        });
+
+        //Update event handler.
+        $("body").on("click", "#tblInventory .Update", function () {
+            var row = $(this).closest("tr");
+            $("td", row).each(function () {
+                if ($(this).find("input").length > 0) {
+                    var span = $(this).find("span");
+                    var input = $(this).find("input");
+                    span.html(input.val());
+                    span.show();
+                    input.hide();
+                }
+            });
+            row.find(".Edit").show();
+            row.find(".Delete").show();
+            row.find(".Cancel").hide();
+            $(this).hide();
+
+            var inventory = {};
+            inventory.ItemCode = row.find(".ItemCode").find("span").html();
+            inventory.ItemName = row.find(".ItemName").find("span").html();
+            inventory.Description = row.find(".Description").find("span").html();
+            inventory.Price = row.find(".Price").find("span").html();
+
+            debugger;
+            if (inventory.ItemName.trim() === '') {
+                alert('Please Enter the ItemName');
+                return;
+            }
+            if (inventory.Description.trim() === '') {
+                alert('Please Enter the Description');
+                return;
+            }
+            if (inventory.Price.trim() === '') {
+                alert('Please Enter the Price');
+                return;
+            }
+
+            $.ajax({
+                type: "POST",
+                url: "/Home/UpdateInventory",
+                data: '{inventory:' + JSON.stringify(inventory) + '}',
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (r) {                   
+                    alert(r.ErrorDesc);                    
+                }
+            });
+        });
+
+        //Cancel event handler.
+        $("body").on("click", "#tblInventory .Cancel", function () {
+            var row = $(this).closest("tr");
+            $("td", row).each(function () {
+                if ($(this).find("input").length > 0) {
+                    var span = $(this).find("span");
+                    var input = $(this).find("input");
+                    input.val(span.html());
+                    span.show();
+                    input.hide();
+                }
+            });
+            row.find(".Edit").show();
+            row.find(".Delete").show();
+            row.find(".Update").hide();
+            $(this).hide();
+        });
+
+        //Delete event handler.
+        $("body").on("click", "#tblInventory .Delete", function () {
+            if (confirm("Do you want to delete this row?")) {
+                var row = $(this).closest("tr");
+                var itemCode = row.find("span").html();
+                $.ajax({
+                    type: "POST",
+                    url: "/Home/DeleteInventory",
+                    data: '{ItemCode: ' + itemCode + '}',
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (response) {
+                        if ($("#tblInventory tr").length > 2) {
+                            row.remove();
+                        } else {
+                            row.find(".Edit").hide();
+                            row.find(".Delete").hide();
+                            row.find("span").html('&nbsp;');
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
